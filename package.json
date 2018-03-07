@@ -1,0 +1,31 @@
+{
+  "name": "tokenomics",
+  "version": "0.0.1",
+  "description": "Tokenomics.",
+  "license": "UNLICENSED",
+  "repository": "https://github.com/richburdon/tokenomics",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^8.1.1",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-stage-0": "^6.24.1",
+    "eslint": "^4.14.0",
+    "eslint-plugin-react": "^7.4.0",
+    "jest": "^22.0.4"
+  },
+  "jest": {
+    "verbose": false,
+    "cacheDirectory": "/tmp/jest"
+  },
+  "scripts": {
+    "test": "jest --no-cache --silent",
+    "test-ci": "jest --no-cache --config jest-ci.config.json",
+    "upgrade": "yarn upgrade-interactive --latest",
+    "get": ""
+  },
+  "dependencies": {
+    "chance": "^1.0.13",
+    "lodash": "^4.17.5",
+    "uuid": "^3.2.1"
+  }
+}

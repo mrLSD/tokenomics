@@ -1,0 +1,86 @@
+# http://eslint.org/docs/rules
+# > eslint file/dir
+
+# Test YML
+# https://www.json2yaml.com
+
+extends: 'eslint:recommended'
+
+# https://www.npmjs.com/package/babel-eslint
+parser: 'babel-eslint'
+
+# http://eslint.org/docs/user-guide/configuring#specifying-environments
+env:
+  browser:          true
+  es6:              true
+  jest:             true
+  jquery:           true
+  node:             true
+  serviceworker:    true
+  worker:           true
+
+globals:
+  _: true
+
+  chrome: true
+
+  __ENV__:          true
+  __PRODUCTION__:   true
+  __DEVELOPMENT__:  true
+  __HOT__:          true
+  __TESTING__:      true
+
+# http://eslint.org/docs/user-guide/configuring#specifying-parser-options
+parserOptions:
+  sourceType: module
+
+  ecmaVersion: 6
+
+  ecmaFeatures:
+    jsx: true
+
+plugins:
+  # https://github.com/yannickcr/eslint-plugin-react
+  - react
+
+rules:
+  args: 0
+
+  indent:
+    - warn
+    - 2
+    - SwitchCase: 1
+      ignoredNodes:
+      - JSXAttribute
+      - JSXSpreadAttribute
+
+  linebreak-style:
+    - error
+    - unix
+
+  no-console:
+    - off
+
+  # Allow function args to be unused (i.e., to complete signature).
+  # http://eslint.org/docs/rules/no-unused-vars
+  no-unused-vars:
+    - error
+    - vars: all
+      args: none
+
+  quotes:
+    - error
+    - single
+
+  # https://github.com/yannickcr/eslint-plugin-react
+  # https://github.com/yannickcr/eslint-plugin-react/tree/master/docs/rules
+  # https://github.com/eslint/eslint/issues/6303
+  react/jsx-uses-react:     error
+  react/jsx-uses-vars:      error
+  react/jsx-indent-props:   0
+  react/jsx-indent:         off
+  react/jsx-key:            error
+
+  semi:
+    - error
+    - always

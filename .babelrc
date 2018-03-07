@@ -1,0 +1,15 @@
+{
+  "presets": [
+    [
+      "env",
+      {
+        "debug": false,
+        "targets": {
+          "node": "6.10"
+        }
+      }
+    ],
+
+    "stage-0"
+  ]
+}
