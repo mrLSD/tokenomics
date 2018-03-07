@@ -2,24 +2,24 @@
 // Copyright 2018 Wireline, Inc.
 //
 
-import _ from 'lodash';
-
-import { Bank, Consumer, Model, Service } from './model';
+import { Util, Bank, Consumer, Model, Service } from './model';
 
 test('sanity', () => {
   expect(true).toBe(true);
 });
 
 test('model', () => {
-  Model.seed(1234);
+  Util.seed(1234);
 
   let model = new Model(new Bank(0.1, 0));
 
   model.addConsumer(new Consumer(5.0));
+  model.addConsumer(new Consumer(1.0));       // Too low to trigger transaction.
+  model.addConsumer(new Consumer(2.0));
 
-  model.addService(new Service(1.05, 5));
-  model.addService(new Service(1.0, 1));
-  model.addService(new Service(1.0, 2));
+  model.addService(new Service(1.2, 7));
+  model.addService(new Service(1.05, 5));     // Best market price.
+  model.addService(new Service(1.0));         // Lowest ask price.
 
   model.run(1);
 

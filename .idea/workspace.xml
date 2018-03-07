@@ -13,14 +13,14 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="vertical" split-proportion="0.26789838">
+    <splitter split-orientation="vertical" split-proportion="0.23094688">
       <split-first>
         <leaf>
           <file leaf-file-name="model.test.js" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/src/model.test.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="64">
-                  <caret line="15" column="39" lean-forward="false" selection-start-line="15" selection-start-column="39" selection-end-line="15" selection-end-column="39" />
+                <state relative-caret-position="177">
+                  <caret line="20" column="55" lean-forward="true" selection-start-line="20" selection-start-column="55" selection-end-line="20" selection-end-column="55" />
                   <folding />
                 </state>
               </provider>
@@ -33,8 +33,8 @@
           <file leaf-file-name="model.js" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/src/model.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="184">
-                  <caret line="178" column="0" lean-forward="true" selection-start-line="178" selection-start-column="0" selection-end-line="178" selection-end-column="0" />
+                <state relative-caret-position="545">
+                  <caret line="255" column="0" lean-forward="true" selection-start-line="255" selection-start-column="0" selection-end-line="255" selection-end-column="0" />
                   <folding />
                 </state>
               </provider>
@@ -62,10 +62,16 @@
       <find>accounts</find>
       <find>assert</find>
       <find>::</find>
+      <find>transac</find>
+      <find>transaction</find>
+      <find>trans</find>
+      <find>Model.</find>
     </findStrings>
     <replaceStrings>
       <replace>Model.fixed</replace>
       <replace>_grossRevenue</replace>
+      <replace>_invocations</replace>
+      <replace>Util.</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -78,8 +84,8 @@
         <option value="$PROJECT_DIR$/.eslintrc.json" />
         <option value="$PROJECT_DIR$/.babelrc" />
         <option value="$PROJECT_DIR$/package.json" />
-        <option value="$PROJECT_DIR$/src/model.test.js" />
         <option value="$PROJECT_DIR$/src/model.js" />
+        <option value="$PROJECT_DIR$/src/model.test.js" />
       </list>
     </option>
   </component>
@@ -249,16 +255,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/model.test.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="64">
-          <caret line="15" column="39" lean-forward="false" selection-start-line="15" selection-start-column="39" selection-end-line="15" selection-end-column="39" />
+        <state relative-caret-position="177">
+          <caret line="20" column="55" lean-forward="true" selection-start-line="20" selection-start-column="55" selection-end-line="20" selection-end-column="55" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/model.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="184">
-          <caret line="178" column="0" lean-forward="true" selection-start-line="178" selection-start-column="0" selection-end-line="178" selection-end-column="0" />
+        <state relative-caret-position="545">
+          <caret line="255" column="0" lean-forward="true" selection-start-line="255" selection-start-column="0" selection-end-line="255" selection-end-column="0" />
           <folding />
         </state>
       </provider>

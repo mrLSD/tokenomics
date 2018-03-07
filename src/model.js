@@ -3,14 +3,13 @@
 //
 
 import _ from 'lodash';
+import uuidv4 from 'uuid/v4';
 import Chance from 'chance';
 
 /**
- * Economic Model.
+ * Utils.
  */
-export class Model {
-
-  // TODO(burdon): Extract to utils.
+export class Util {
 
   static fixed(n) {
     return Number(n.toFixed(10));
@@ -27,19 +26,23 @@ export class Model {
     let running = true;
     while (running) {
       let words = [
-        Model._chance.country({ full: true }).replace(/ /g, '-').toLowerCase(),
-        Model._chance.animal({ type: 'pet' }).replace(/ /g, '-').toLowerCase(),
+        Util._chance.country({ full: true }).replace(/ /g, '-').toLowerCase(),
+        Util._chance.animal({ type: 'pet' }).replace(/ /g, '-').toLowerCase(),
       ];
 
       let name = _.join(words, '-');
-      if (!Model.names.has(name)) {
-        Model.names.add(name);
+      if (!Util.names.has(name)) {
+        Util.names.add(name);
         return name;
       }
     }
-
-//  return _.join(_.times(3, () => Model._chance.word({ syllables: 1 })), '-');
   }
+}
+
+/**
+ * Economic Model.
+ */
+export class Model {
 
   _bank = null;
   _services = new Map();
@@ -58,7 +61,7 @@ export class Model {
   get info() {
     // Check all money accounted for.
     let serviceIncome = _.reduce(Array.from(this._services.values()), (sum, service) => (sum + service._account), 0);
-    console.assert(Model.fixed(serviceIncome + this._bank._grossIncome) === this._bank._grossRevenue);
+    console.assert(Util.fixed(serviceIncome + this._bank._grossIncome) === this._bank._grossRevenue);
 
     return {
       bank: this._bank.info,
@@ -72,19 +75,21 @@ export class Model {
   get services() {
     return _.chain(Array.from(this._services.values()))
       .keyBy('_id')
-      .mapValues(s => s.info)
+      .mapValues(obj => obj.info)
       .value();
   }
 
   get consumers() {
     return _.chain(Array.from(this._consumers.values()))
       .keyBy('_id')
-      .mapValues(s => s.info)
+      .mapValues(obj => obj.info)
       .value();
   }
 
   get ledger() {
-    return this._ledger;
+    return _.chain(this._ledger)
+      .mapValues(obj => obj._data)
+      .value();
   }
 
   addService(service) {
@@ -108,7 +113,10 @@ export class Model {
         let service = this.getServiceByLowestPrice(consumer._budget);
 
         // Allocate.
-        this._ledger.push(this._bank.transaction(consumer, service));
+        let transaction = this._bank.transaction(consumer, service);
+        if (transaction) {
+          this._ledger.push(transaction);
+        }
       });
 
       this._turns++;
@@ -144,7 +152,7 @@ export class Bank {
   _grossRevenue = 0;
 
   constructor(taxRate=0.01, reserve=0) {
-    this._taxRate = Model.fixed(taxRate);
+    this._taxRate = Util.fixed(taxRate);
     this._reserve = reserve;
   }
 
@@ -169,35 +177,48 @@ export class Bank {
     let price = this.calculateDicountedPrice(service, budget);
 
     // Calculate budget.
-    let taxedPrice = Model.fixed(price * (1 + this._taxRate));
-    let transactions = Math.floor(budget / taxedPrice);
-    let spend = Model.fixed(transactions * taxedPrice);
-    let income = Model.fixed(transactions * service._price);
+    let taxedPrice = Util.fixed(price * (1 + this._taxRate));
+    let invocations = Math.floor(budget / taxedPrice);
+    if (!invocations) {
+      return;
+    }
 
-    let discount = Model.fixed(service._price - price);
-    let tax = Model.fixed(transactions * price * this._taxRate - transactions * discount);
+    let spend = Util.fixed(invocations * taxedPrice);
+    let income = Util.fixed(invocations * service._price);
+
+    let discount = Util.fixed(service._price - price);
+    let tax = Util.fixed(invocations * price * this._taxRate - invocations * discount);
 
     // Take tax.
-    this._grossRevenue = Model.fixed(this._grossRevenue + spend);
-    this._grossIncome = Model.fixed(this._grossIncome + tax);
-    this._reserve = Model.fixed(this._reserve + tax);
+    this._grossRevenue = Util.fixed(this._grossRevenue + spend);
+    this._grossIncome = Util.fixed(this._grossIncome + tax);
+    this._reserve = Util.fixed(this._reserve + tax);
 
     // Spend.
-    consumer._spent = Model.fixed(consumer._spent + spend);
-    consumer._transactions += transactions;
+    consumer._spent = Util.fixed(consumer._spent + spend);
+    consumer._invocations += invocations;
 
     // Income.
-    service._account = Model.fixed(service._account + income);
-    service._transactions += transactions;
+    service._account = Util.fixed(service._account + income);
+    service._invocations += invocations;
 
-    return new Transaction({ service: service._id, consumer: consumer._id, transactions, price, discount, tax });
+    return new Transaction({
+      consumer: consumer._id,
+      service: service._id,
+      quantity:
+      invocations,
+      actualPrice: service._price,
+      discount,
+      dicountedPrice: price,
+      tax
+    });
   }
 
-  // TODO(burdon): Calculate adjusted price based on staking and volume. Bank has to pay for it.
-  // E.g., calculate global percentage of stake and proportionally allocate discount on volume. Need volume?
-  // Ensure that reserve is met after all turns (can't do iteratively).
-
   /**
+   * Calculate discounted price based on staking share and current volume.
+   *
+   * The service's price must be met, but the bank can apply a coupon from its tax revenue.
+   * This will reduce in lower tax revenues for the bank, but it will maintain its minimal reserve.
    *
    * @param service
    * @param budget
@@ -208,28 +229,28 @@ export class Bank {
       return service._price;
     }
 
-    // TODO(burdon): Service provider must get paid what asked for.
+    // TODO(burdon): This model currently generates discounts based on stake.
+    //     Instead generate tokens that can be used to provide discounts, or be sold/traded?
 
-    // TODO(burdon): Calculate optimal price for service (or optimal staking).
+    // TODO(burdon): Calculate optimal price for service (or optimal staking). E.g., Adwords bidding.
 
-    // TODO(burdon): Calculate discount based on percentage of stake and volume.
-    // TODO(burdon): Maintain bank minimal reserve.
-    // TODO(burdon): Maximal discount to maintain reserve (considering all other transaction).
+    // TODO(burdon): Could be more generous and allocation portion of total revenue.
+    let taxedPrice = Util.fixed(service._price * (1 + this._taxRate));
+    let invocations = Math.floor(budget / taxedPrice);
+    let spend = Util.fixed(invocations * taxedPrice);
+    let potentialRevenue = spend * this._taxRate;
 
-    // TODO(burdon): Calculate current tax revenue and apportion to stake holders.
-    // TODO(burdon): Calculate from all consumers for this kind of service.
-    // TODO(burdon): Not all of budget will be used.
-    let currentRevenue = budget * this._taxRate;
-
-    // TODO(burdon): Our relative stake.
+    // TODO(burdon): Need to trim services that are not competitive (e.g., have large stake, but priced out).
+    // Our relative stake of the tax income.
     let totalStake = this._stakes;
     let stakingPercentage = service._stake / totalStake;
-    let allocation = currentRevenue * stakingPercentage;
+    let allocation = potentialRevenue * stakingPercentage;
 
-    let transactions = Math.floor(budget / service._price);
-    let discount = Model.fixed(allocation / transactions);
+    // Calculate pricing discount.
+    let invocations2 = Math.floor(budget / service._price);
+    let discount = Util.fixed(allocation / invocations2);
 
-    return Model.fixed(service._price * (1 - discount));
+    return Util.fixed(service._price * (1 - discount));
   }
 }
 
@@ -238,11 +259,9 @@ class Transaction {
   _data;
 
   constructor(data) {
-    this._data = data;
-  }
-
-  get data() {
-    return this._data;
+    this._data = _.defaults({
+      id: uuidv4()
+    }, data);
   }
 }
 
@@ -251,13 +270,13 @@ class Transaction {
  */
 export class Service {
 
-  _id = Model.name();
+  _id = Util.name();
 
   _price;
   _stake;
 
   _account = 0;
-  _transactions = 0;
+  _invocations = 0;
 
   constructor(price=1, stake=0) {
     this._price = price;
@@ -267,7 +286,7 @@ export class Service {
   get info() {
     return {
       price: this._price,
-      transactions: this._transactions,
+      invocations: this._invocations,
       account: this._account,
       stake: this._stake
     };
@@ -279,15 +298,13 @@ export class Service {
  */
 export class Consumer {
 
-  // TODO(burdon): Model account?
-
-  _id = Model.name();
+  _id = Util.name();
 
   _budget;
   _stake;
 
   _spent = 0;
-  _transactions = 0;
+  _invocations = 0;
 
   constructor(budget=1, stake=0) {
     this._budget = budget;
@@ -297,7 +314,7 @@ export class Consumer {
   get info() {
     return {
       budget: this._budget,
-      transactions: this._transactions,
+      invocations: this._invocations,
       spent: this._spent,
       stake: this._stake
     };
