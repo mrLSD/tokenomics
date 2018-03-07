@@ -13,7 +13,7 @@ export class Model {
   // TODO(burdon): Extract to utils.
 
   static fixed(n) {
-    return Number(n.toFixed(5));
+    return Number(n.toFixed(10));
   }
 
   static _chance = new Chance();
@@ -44,6 +44,7 @@ export class Model {
   _bank = null;
   _services = new Map();
   _consumers = new Map();
+  _ledger = [];
   _turns = 0;
 
   constructor(bank) {
@@ -56,15 +57,15 @@ export class Model {
 
   get info() {
     // Check all money accounted for.
-    let accounts = _.reduce(Array.from(this._services.values()), (sum, service) => (sum + service._account), 0);
-    console.assert(Model.fixed(accounts + this._bank._income) === this._bank._gdp);
+    let serviceIncome = _.reduce(Array.from(this._services.values()), (sum, service) => (sum + service._account), 0);
+    console.assert(Model.fixed(serviceIncome + this._bank._grossIncome) === this._bank._grossRevenue);
 
     return {
       bank: this._bank.info,
       turns: this._turns,
       services: this._services.size,
       consumers: this._consumers.size,
-      accounts
+      serviceIncome
     };
   }
 
@@ -82,8 +83,13 @@ export class Model {
       .value();
   }
 
+  get ledger() {
+    return this._ledger;
+  }
+
   addService(service) {
     this._services.set(service._id, service);
+    this._bank._stakes += service._stake;
     return this;
   }
 
@@ -102,7 +108,7 @@ export class Model {
         let service = this.getServiceByLowestPrice(consumer._budget);
 
         // Allocate.
-        this._bank.transaction(consumer, service);
+        this._ledger.push(this._bank.transaction(consumer, service));
       });
 
       this._turns++;
@@ -132,9 +138,10 @@ export class Bank {
 
   _taxRate;
   _reserve;
+  _stakes = 0;
 
-  _income = 0;
-  _gdp = 0;
+  _grossIncome = 0;
+  _grossRevenue = 0;
 
   constructor(taxRate=0.01, reserve=0) {
     this._taxRate = Model.fixed(taxRate);
@@ -149,8 +156,9 @@ export class Bank {
     return {
       taxRate: this._taxRate,
       reserve: this._reserve,
-      income: this._income,
-      gdp: this._gdp
+      stakes: this._stakes,
+      grossIncome: this._grossIncome,
+      grossRevenue: this._grossRevenue
     };
   }
 
@@ -164,24 +172,25 @@ export class Bank {
     let taxedPrice = Model.fixed(price * (1 + this._taxRate));
     let transactions = Math.floor(budget / taxedPrice);
     let spend = Model.fixed(transactions * taxedPrice);
+    let income = Model.fixed(transactions * service._price);
+
+    let discount = Model.fixed(service._price - price);
+    let tax = Model.fixed(transactions * price * this._taxRate - transactions * discount);
 
     // Take tax.
-    let tax = this.calculateTax(service, spend);
-    this._gdp = Model.fixed(this._gdp + spend);
+    this._grossRevenue = Model.fixed(this._grossRevenue + spend);
+    this._grossIncome = Model.fixed(this._grossIncome + tax);
     this._reserve = Model.fixed(this._reserve + tax);
-    this._income = Model.fixed(this._income + tax);
 
     // Spend.
     consumer._spent = Model.fixed(consumer._spent + spend);
     consumer._transactions += transactions;
 
     // Income.
-    service._account = Model.fixed(service._account + (spend - tax));
+    service._account = Model.fixed(service._account + income);
     service._transactions += transactions;
-  }
 
-  calculateTax(service, spend) {
-    return Model.fixed(spend * this._taxRate);
+    return new Transaction({ service: service._id, consumer: consumer._id, transactions, price, discount, tax });
   }
 
   // TODO(burdon): Calculate adjusted price based on staking and volume. Bank has to pay for it.
@@ -199,21 +208,41 @@ export class Bank {
       return service._price;
     }
 
+    // TODO(burdon): Service provider must get paid what asked for.
+
+    // TODO(burdon): Calculate optimal price for service (or optimal staking).
+
     // TODO(burdon): Calculate discount based on percentage of stake and volume.
     // TODO(burdon): Maintain bank minimal reserve.
+    // TODO(burdon): Maximal discount to maintain reserve (considering all other transaction).
 
-    let totalStake = 10;
+    // TODO(burdon): Calculate current tax revenue and apportion to stake holders.
+    // TODO(burdon): Calculate from all consumers for this kind of service.
+    // TODO(burdon): Not all of budget will be used.
+    let currentRevenue = budget * this._taxRate;
 
     // TODO(burdon): Our relative stake.
-    let stakingPercentage = totalStake / service._stake;
+    let totalStake = this._stakes;
+    let stakingPercentage = service._stake / totalStake;
+    let allocation = currentRevenue * stakingPercentage;
 
-    // TODO(burdon): Maximal discount to maintain reserve (considering all other transaction).
-    // E.g., allocate worst case discount?
-    let reservePercentage = this._reserve / budget;
-
-    let discount = 0;
+    let transactions = Math.floor(budget / service._price);
+    let discount = Model.fixed(allocation / transactions);
 
     return Model.fixed(service._price * (1 - discount));
+  }
+}
+
+class Transaction {
+
+  _data;
+
+  constructor(data) {
+    this._data = data;
+  }
+
+  get data() {
+    return this._data;
   }
 }
 
