@@ -1,1 +1,1 @@
-# tokenomics
+# Wireline Tokenomics Simulation
