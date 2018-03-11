@@ -13,7 +13,7 @@ export class Model {
 
   _bank = null;
   _services = new Map();
-  _consumers = new Map();
+  _customers = new Map();
   _ledger = [];
   _turns = 0;
 
@@ -34,7 +34,7 @@ export class Model {
       bank: this._bank.info,
       turns: this._turns,
       services: this._services.size,
-      consumers: this._consumers.size,
+      customers: this._customers.size,
       serviceIncome
     };
   }
@@ -46,11 +46,15 @@ export class Model {
       .value();
   }
 
-  get consumers() {
-    return _.chain(Array.from(this._consumers.values()))
+  get customers() {
+    return _.chain(Array.from(this._customers.values()))
       .keyBy('_id')
       .mapValues(obj => obj.info)
       .value();
+  }
+
+  get backers() {
+    return [];
   }
 
   get ledger() {
@@ -65,8 +69,8 @@ export class Model {
     return this;
   }
 
-  addConsumer(consumer) {
-    this._consumers.set(consumer._id, consumer);
+  addConsumer(customer) {
+    this._customers.set(customer._id, customer);
     return this;
   }
 
@@ -89,13 +93,13 @@ export class Model {
     _.times(n, () => {
 
       // Spend.
-      this._consumers.forEach(consumer => {
+      this._customers.forEach(customer => {
 
         // Find best prices.
-        let service = this.getServiceByLowestPrice(consumer._budget);
+        let service = this.getServiceByLowestPrice(customer._budget);
 
         // Allocate.
-        let transaction = this._bank.transaction(consumer, service);
+        let transaction = this._bank.transaction(customer, service);
         if (transaction) {
           this._ledger.push(transaction);
         }

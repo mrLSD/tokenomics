@@ -7,7 +7,7 @@ import { Util } from './util';
 /**
  * Consumer.
  */
-export class Consumer {
+export class Customer {
 
   _id = Util.name();
 

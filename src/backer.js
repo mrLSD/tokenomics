@@ -3,7 +3,7 @@
 //
 
 /**
- * 
+ *
  */
 export class Backer {
 
