@@ -4,8 +4,9 @@
 
 import { Bank } from './bank';
 import { Model } from './model';
+import { Service, ServiceContract } from './service';
+import { Backer, StakingContract } from './backer';
 import { Customer } from './customer';
-import { Service } from './service';
 import { Util } from './util';
 
 test('sanity', () => {
@@ -15,23 +16,37 @@ test('sanity', () => {
 test('model', () => {
   Util.seed(1234);
 
-  let model = new Model(new Bank(0.1, 0));
+  // TODO(burdon): Model reputation (# transactions, error rate).
+  // TODO(burdon): Model contracts (backer, customer).
+  // TODO(burdon): Model backers (looking for best reputation).
 
-  model.addConsumer(new Customer(5.0));
-  model.addConsumer(new Customer(1.0));       // Too low to trigger transaction.
-  model.addConsumer(new Customer(2.0));
+  let model = new Model(new Bank(0.05));
 
-  model.addService(new Service(1.2, 7));
-  model.addService(new Service(1.05, 5));     // Best market price.
-  model.addService(new Service(1.0));         // Lowest ask price.
+  let services = [
+    new Service(0, 'compute'),
+    new Service(0)
+  ];
 
-  model.run(1);
+  let backers = [
+    new Backer(services[1])
+  ];
 
-  console.log('Model:', JSON.stringify(model.info, null, 2));
+  let customers = [
+    new Customer(10)
+  ];
 
-  console.log('Services:', JSON.stringify(model.services, null, 2));
-  console.log('Customers:', JSON.stringify(model.customers, null, 2));
-  console.log('Backers:', JSON.stringify(model.backers, null, 2));
+  new ServiceContract(services[0], services[1], 1);
+  new ServiceContract(services[1], customers[0], 3);
 
-  console.log('Ledger:', JSON.stringify(model.ledger, null, 2));
+  // TODO(burdon): Not implemented.
+  new StakingContract(services[1], backers[0], 1);
+
+  model
+    .addServices(services)
+    .addBackers(backers)
+    .addCustomers(customers);
+
+  model.run(3);
+
+  console.log(JSON.stringify(model.info, null, 2));
 });

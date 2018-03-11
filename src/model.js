@@ -4,8 +4,6 @@
 
 import _ from 'lodash';
 
-import { Util } from './util';
-
 /**
  * Economic Model.
  */
@@ -13,6 +11,7 @@ export class Model {
 
   _bank = null;
   _services = new Map();
+  _backers = new Map();
   _customers = new Map();
   _ledger = [];
   _turns = 0;
@@ -26,21 +25,43 @@ export class Model {
   }
 
   get info() {
-    // Check all money accounted for.
-    let serviceIncome = _.reduce(Array.from(this._services.values()), (sum, service) => (sum + service._account), 0);
-    console.assert(Util.fixed(serviceIncome + this._bank._grossIncome) === this._bank._grossRevenue);
+    // TODO(burdon): Track spending and check all balances out.
+    let values = _.reduce(Array.from(this._services.values()),
+      (sum, service) => ({
+        income: (sum.income + service.income),
+        taxes: (sum.taxes + service.taxes),
+      }) , {
+        income: 0,
+        taxes: 0
+      });
 
     return {
-      bank: this._bank.info,
       turns: this._turns,
-      services: this._services.size,
-      customers: this._customers.size,
-      serviceIncome
+
+      values,
+
+      bank: this._bank.info,
+      services: this.services,
+      backers: this.backers,
+      customers: this.customers,
+
+      ledger: this.ledger
     };
+  }
+
+  get bank() {
+    return this._bank;
   }
 
   get services() {
     return _.chain(Array.from(this._services.values()))
+      .keyBy('_id')
+      .mapValues(obj => obj.info)
+      .value();
+  }
+
+  get backers() {
+    return _.chain(Array.from(this._backers.values()))
       .keyBy('_id')
       .mapValues(obj => obj.info)
       .value();
@@ -53,60 +74,56 @@ export class Model {
       .value();
   }
 
-  get backers() {
-    return [];
-  }
-
   get ledger() {
     return _.chain(this._ledger)
-      .mapValues(obj => obj._data)
+      .mapValues(obj => obj.info)
       .value();
   }
 
-  addService(service) {
-    this._services.set(service._id, service);
-    this._bank._stakes += service._stake;
-    return this;
-  }
-
-  addConsumer(customer) {
-    this._customers.set(customer._id, customer);
-    return this;
-  }
-
-  getServiceByLowestPrice(budget) {
-    let best = null;
-    let bestPrice = 0;
-
-    this._services.forEach(service => {
-      let price = this._bank.calculateDicountedPrice(service, budget);
-      if (!best || price < bestPrice) {
-        best = service;
-        bestPrice = price;
-      }
+  addServices(services) {
+    _.each(services, service => {
+      this._services.set(service._id, service);
     });
 
-    return best;
+    return this;
+  }
+
+  addBackers(backers) {
+    _.each(backers, backer => {
+      this._backers.set(backer._id, backer);
+    });
+
+    return this;
+  }
+
+  addCustomers(customers) {
+    _.each(customers, customer => {
+      this._customers.set(customer._id, customer);
+    });
+
+    return this;
   }
 
   run(n=1) {
     _.times(n, () => {
 
-      // Spend.
+      // Execute contracts.
       this._customers.forEach(customer => {
+        _.each(customer.contracts, contract => {
+          let transaction = contract.execute(this._bank.taxRate);
+          if (transaction) {
+            let { tax=0 } = transaction;
 
-        // Find best prices.
-        let service = this.getServiceByLowestPrice(customer._budget);
+            this._bank.addRevenue(tax);
 
-        // Allocate.
-        let transaction = this._bank.transaction(customer, service);
-        if (transaction) {
-          this._ledger.push(transaction);
-        }
+            this._ledger.push(transaction);
+          }
+        });
       });
+
+      // TODO(burdon): Redistribute taxes based on staking.
 
       this._turns++;
     });
   }
 }
-

@@ -11,6 +11,9 @@ import { Chance } from 'chance';
  */
 export class Util {
 
+  /**
+   * Fixed precision.
+   */
   static fixed(n) {
     return Number(n.toFixed(10));
   }

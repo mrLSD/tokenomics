@@ -3,31 +3,49 @@
 //
 
 import { Util } from './util';
+import { Account } from './bank';
+
+/**
+ * Consumer of service.
+ */
+export class Consumer {
+
+  _account;
+
+  // Service contracts.
+  _contracts = [];
+
+  constructor(balance=1) {
+    this._account = new Account(balance);
+  }
+
+  get account() {
+    return this._account;
+  }
+
+  get contracts() {
+    return this._contracts;
+  }
+}
 
 /**
  * Consumer.
  */
-export class Customer {
+export class Customer extends Consumer {
 
   _id = Util.name();
 
-  _budget;
-  _stake;
+  get id() {
+    return this._id;
+  }
 
-  _spent = 0;
-  _invocations = 0;
-
-  constructor(budget = 1, stake = 0) {
-    this._budget = budget;
-    this._stake = stake;
+  get account() {
+    return this._account;
   }
 
   get info() {
     return {
-      budget: this._budget,
-      invocations: this._invocations,
-      spent: this._spent,
-      stake: this._stake
+      account: this._account.info,
     };
   }
 }
