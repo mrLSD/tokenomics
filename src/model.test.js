@@ -2,7 +2,11 @@
 // Copyright 2018 Wireline, Inc.
 //
 
-import { Util, Bank, Consumer, Model, Service } from './model';
+import { Bank } from './bank';
+import { Model } from './model';
+import { Consumer } from './consumer';
+import { Service } from './service';
+import { Util } from './util';
 
 test('sanity', () => {
   expect(true).toBe(true);
