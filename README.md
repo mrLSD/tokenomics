@@ -1,1 +1,6 @@
-# tokenomics
+# Wireline Tokenomics Simulation
+
+~~~~
+yarn install
+jest
+~~~~
