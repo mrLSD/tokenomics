@@ -18,6 +18,7 @@ export class Service extends Consumer {
   _earnings = 0;
   _costs = 0;
   _taxes = 0;
+  _stakingContracts = [];
 
   get id() {
     return this._id;
@@ -29,7 +30,8 @@ export class Service extends Consumer {
       account: this._account.info,
       earnings: this._earnings,
       costs: this._costs,
-      taxes: this._taxes
+      taxes: this._taxes,
+      stakes: _.reduce(this._stakingContracts, (sum, contract) => (sum + contract.stake), 0)
     };
   }
 
@@ -63,6 +65,10 @@ export class Service extends Consumer {
     return cost;
   }
 
+  addStakingContract(contract) {
+    this._stakingContracts.push(contract);
+  }
+
   /**
    * Execute transaction at price.
    * @param price
@@ -73,12 +79,12 @@ export class Service extends Consumer {
     this._invocations++;
 
     let cost = this.cost;
-    this._account.add(price - cost);
-
     let taxes = Util.fixed(price * taxRate);
 
+    this._account.add(price - cost - taxes);
+
     this._earnings += price;
-    this._costs = Util.fixed(this._costs + cost + taxes);
+    this._costs = Util.fixed(this._costs + cost);
     this._taxes = Util.fixed(this._taxes + taxes);
 
     // Pay sub-services.

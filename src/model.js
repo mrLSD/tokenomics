@@ -4,6 +4,8 @@
 
 import _ from 'lodash';
 
+import { Util } from './util';
+
 /**
  * Economic Model.
  */
@@ -25,12 +27,14 @@ export class Model {
   }
 
   get info() {
-    // TODO(burdon): Track spending and check all balances out.
+    // TODO(burdon): Track spending and check all balances out all service accounts.
     let values = _.reduce(Array.from(this._services.values()),
       (sum, service) => ({
+        balance: (sum.balance + service.account.balance),
         income: (sum.income + service.income),
         taxes: (sum.taxes + service.taxes),
       }) , {
+        balance: 0,
         income: 0,
         taxes: 0
       });
@@ -106,22 +110,37 @@ export class Model {
 
   run(n=1) {
     _.times(n, () => {
+      let taxRevenue = 0;
 
       // Execute contracts.
       this._customers.forEach(customer => {
         _.each(customer.contracts, contract => {
           let transaction = contract.execute(this._bank.taxRate);
           if (transaction) {
-            let { tax=0 } = transaction;
+            let { taxes=0 } = transaction.info;
 
-            this._bank.addRevenue(tax);
+            this._bank.addRevenue(taxes);
+            taxRevenue += taxes;
 
             this._ledger.push(transaction);
           }
         });
       });
 
-      // TODO(burdon): Redistribute taxes based on staking.
+      // Redistribute taxes based on staking.
+      let totalStakes = _.reduce(Array.from(this._backers.values()), (sum, backer) => {
+        return sum + _.reduce(backer.contracts, (sum, contract) => (sum + contract.stake), 0);
+      }, 0);
+
+      // TODO(burdon): Accounts are wrong.
+
+      this._backers.forEach(backer => {
+        _.each(backer.contracts, contract => {
+          let share = Util.fixed(taxRevenue * contract.stake / totalStakes);
+          contract.service.account.add(share);
+          this._bank.addDisbursement(share);
+        });
+      });
 
       this._turns++;
     });

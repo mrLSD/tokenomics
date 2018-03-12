@@ -14,6 +14,8 @@ export class Bank {
 
   _taxRate;
   _grossRevenue = 0;
+  _disbursements = 0;
+  _reserve = new Account();
 
   constructor(taxRate = 0) {
     this._taxRate = Util.fixed(taxRate);
@@ -26,7 +28,9 @@ export class Bank {
   get info() {
     return {
       taxRate: this._taxRate,
-      grossRevenue: this._grossRevenue
+      grossRevenue: this._grossRevenue,
+      disbursements: this._disbursements,
+      reserve: this._reserve.balance
     };
   }
 
@@ -36,6 +40,12 @@ export class Bank {
 
   addRevenue(revenue) {
     this._grossRevenue += revenue;
+    this._reserve.add(revenue);
+  }
+
+  addDisbursement(amount) {
+    this._disbursements += amount;
+    this._reserve.add(-amount);
   }
 }
 

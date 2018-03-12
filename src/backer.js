@@ -10,15 +10,14 @@ import { Util } from './util';
 export class Backer {
 
   _id = Util.name();
-  _service;
   _contracts = [];
-
-  constructor(service) {
-    this._service = service;
-  }
 
   get id() {
     return this._id;
+  }
+
+  get contracts() {
+    return this._contracts;
   }
 }
 
@@ -36,6 +35,15 @@ export class StakingContract {
     this._backer = backer;
     this._stake = stake;
 
+    service.addStakingContract(this);
     backer._contracts.push(this);
+  }
+
+  get service() {
+    return this._service;
+  }
+
+  get stake() {
+    return this._stake;
   }
 }
